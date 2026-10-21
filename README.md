@@ -1,98 +1,126 @@
-# PowerSetter — Next.js website
+# PowerSetter website (concept)
 
-A complete, responsive website concept rebuilt in Next.js App Router with strict TypeScript and React. The redesign replaces the original single-page HTML mock-up and introduces a proposed PowerSetter identity, an editorial layout, new generated imagery and a guided comparison experience.
+A redesigned marketing site for [PowerSetter](https://www.powersetter.com/), the energy comparison platform, prepared by Nuvato as a pitch. It is a private preview: search indexing is off, and nothing a visitor types is stored or sent. Live rates, availability and enrollment stay on powersetter.com.
 
-## Stack
+Built with Next.js 16 (App Router), React 19, TypeScript and Tailwind CSS 4. Every route is statically prerendered and deploys to Vercel with no extra configuration.
 
-- Next.js 16.4.2, React 19.3.1, TypeScript
-- App Router, typed content, reusable server and client components
-- Self-hosted Manrope and Inter fonts through `next/font/local`
-- Optimized WebP imagery, transparent logo and SVG app icon
-- Lucide icons, responsive CSS, native semantic controls and reduced-motion support
-- Static export for private Sites hosting; the source remains a normal Next.js project
+## Quick start
 
-## Development
+Requires Node 24 (see `.nvmrc`) and npm 11.
 
 ```sh
 npm ci
-npm run dev
+npm run dev          # http://localhost:3000
 ```
 
-Open `http://localhost:4173`. The development wrapper translates Sites preview flags into Next.js flags. It uses Webpack, matching the production compiler.
+## Scripts
+
+| Script              | What it does                                                   |
+| ------------------- | -------------------------------------------------------------- |
+| `npm run dev`       | Development server                                             |
+| `npm run build`     | Production build                                               |
+| `npm run start`     | Serve the production build                                     |
+| `npm run check`     | Prettier check, zero-warning ESLint, typecheck, unit tests     |
+| `npm run lint`      | ESLint with `--max-warnings=0`                                 |
+| `npm run typecheck` | `next typegen` then `tsc --noEmit` (works on a clean checkout) |
+| `npm run format`    | Prettier, including Tailwind class sorting                     |
+| `npm test`          | Unit tests with Node's built-in runner (`lib/**/*.test.ts`)    |
+| `npm run test:e2e`  | Playwright against the production build (run `build` first)    |
+
+Running the end-to-end suite locally:
 
 ```sh
-npm run typecheck
-npm test
 npm run build
+npx playwright install firefox webkit     # once; Chromium can reuse Edge or Chrome
+PW_CHANNEL=msedge npx playwright test      # or PW_CHANNEL=chrome
 ```
 
-`next build` exports the complete website to `out/`. Serve that directory with a static host. No dependency installation is needed on the hosting side. Sites identity and the `out` deployment directory are retained in `.openai/hosting.json`.
+## Environment
 
-## Routes
+Copy `.env.example` to `.env.local` for local overrides. Both variables are read at build time.
 
-| Route | Purpose |
-| --- | --- |
-| `/` | New brand, hero, home/business ZIP entry, energy explorer, community solar, platform explanation, process, business and journal |
-| `/energy/` | Electricity and natural gas options, plan-review checklist |
-| `/community-solar/` | Shared solar, eligibility questions, program considerations |
-| `/business/` | Business energy and preparation checklist |
-| `/how-it-works/` | Three-step decision guide |
-| `/compare/` | Accessible three-step interest, location and next-step flow |
-| `/savings/` | Editable electricity supply-cost comparison |
-| `/about/` | Verified company description and company-reported figures |
-| `/contact/` | Public phone and current official contact page |
-| `/learn/` | Energy journal |
-| `/learn/read-your-energy-bill/` | Bill-reading guide |
-| `/learn/community-solar-explained/` | Shared-solar guide |
-| `/learn/compare-energy-plans/` | Plan comparison guide |
+| Variable                     | Purpose                                                                                                               | Default                                                |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `NEXT_PUBLIC_SITE_URL`       | Canonical origin for metadata, sitemap and structured data                                                            | Vercel production domain, else `http://localhost:3000` |
+| `NEXT_PUBLIC_ALLOW_INDEXING` | `true` lets search engines index the site. Only applies to Vercel production deployments; previews are never indexed. | `false`                                                |
 
-A custom not-found page provides a route back home.
+## Structure
 
-## Behavior and integration boundary
+```text
+app/                  routes, layout, metadata, error boundaries, robots, sitemap, manifest, icons, social image
+  globals.css         design tokens (@theme), custom utilities, motion
+components/
+  sections/           one file per homepage section (several are reused on inner pages)
+  bill.tsx            the example bill: switch the supply rate, only the supply line changes
+  coverage-map.tsx    tile map of the listed states, with a ZIP check
+  compare-wizard.tsx  three-step "find my options" flow
+  quick-start.tsx     hero ZIP form (a plain GET form, works without JavaScript)
+  calculator.tsx      supply cost calculator
+  site-header.tsx, site-footer.tsx, mobile-action-bar.tsx, reveal-observer.tsx
+  ui.tsx, icons.tsx   shared primitives and inline SVG icons
+lib/
+  site.ts             business facts and navigation: the single source of truth
+  content.ts          services, FAQs, steps, guides, state tile layout
+  energy.ts           pure logic: ZIP validation, ZIP-to-state lookup, calculator, example bill
+  env.ts              site URL and indexing rules (server only)
+  images.ts           static image imports with alt text
+  *.test.ts           unit tests
+e2e/                  Playwright specs
+assets/images/        images imported by next/image (blur placeholders, AVIF/WebP)
+public/               PNG icons for the web manifest
+source-assets/        original artwork, not deployed
+docs/                 content provenance and image notes
+```
 
-- Energy tabs support mouse, touch, arrow keys, Home and End.
-- The guided flow validates ZIP format, preserves leading zeros and carries the chosen interest and ZIP from the home page.
-- Query-string interests are checked against an allowlist.
-- Calculator handles savings, equal-cost, higher-cost and invalid-rate states. Tests cover unit conversion and ZIP validation.
-- Mobile navigation uses a native modal dialog for focus containment and Escape behavior.
-- Forms do not store or send visitor input. No fake submission success, rate availability or enrollment is shown.
-- The final step explicitly links to the current PowerSetter website for live availability and enrollment. Supplier APIs, a CRM, analytics and a submission backend are not connected.
-- The preview remains private, and metadata is `noindex, nofollow`.
+## Design system
 
-## Image and brand assets
+- **Palette.** Navy `#0a2238` and electric blue `#1668e8` come from the wordmark. Paper `#f6f4ee` is the off-white of a printed statement. Highlighter yellow `#ffe35a` marks the part of a bill a customer can shop. Link text uses `#0f56c9` because the logo blue is only 4.4:1 on the light-blue tint.
+- **Type.** The Red Hat family, self-hosted by `next/font`: Display (heavy, wide bowls that echo the wordmark), Text for body copy, and Mono for bill figures and labels.
+- **Signature moments.** The hero bill, where switching between a utility rate and a supplier rate changes only the supply line, and the coverage map plotted from PowerSetter's published state list.
+- **Rules.** No eyebrow label on every section, no icon grids, no invented statistics or testimonials. Every photograph is AI-generated and labelled "Illustrative image". Headings and images reveal on scroll; everything is visible without JavaScript or with reduced motion.
+- **Utilities.** `shell`, `section-y`, `text-display`, `text-heading`, `mono-label` and `highlighter` are defined with `@utility` in `app/globals.css`.
 
-Created with the built-in image generation tool. Website-bound assets are under `public/assets/`. Original generation outputs are preserved separately by the generation service. Generated scenes are conceptual and do not claim to show PowerSetter installations.
+## Deploying to Vercel
 
-| Asset | Placement | Art direction |
-| --- | --- | --- |
-| `powersetter-logo.png` | Navigation and footer | Single geometric P symbol followed by lowercase navy “owersetter”; negative-space diagonal and electric-blue accent; transparent background |
-| `solar-home.webp` and `solar-home-small.webp` | Home hero and editorial content | Photorealistic sunlit modern limestone-and-oak home with a clean solar roof, blue sky and natural landscaping |
-| `community-solar.webp` and `community-solar-small.webp` | Community solar and editorial content | Photorealistic shared solar farm in green rolling countryside, precise blue arrays and a curving access path |
-| `evening-home.webp` | Energy explorer and editorial content | Previously generated warm architectural home at dusk, with no rooftop panels |
+The repository deploys as a standard Next.js project; no `vercel.json` or `vercel.ts` is needed.
 
-Prompt set: logo-brand, horizontal single-line `powersetter` wordmark, navy `#0D2438`, blue `#1668E8`, clean geometric P and no tagline; photorealistic-natural home hero, 1536×1024, warm materials and soft sunlight, central composition for mobile cropping, no text or people; photorealistic-natural shared solar farm, 1536×1024, aerial oblique landscape, green countryside and blue panels, late-morning light, no labels or interface. Images were compressed and resized for the site; transparent empty logo margins were trimmed for navigation use.
+1. In Vercel, **Add New → Project** and import `bdocamponuvatoai/powersetter`. The framework preset is detected as Next.js, and Node 24 is selected from `engines` in `package.json`.
+2. Environment variables, **Production** only:
+   - `NEXT_PUBLIC_SITE_URL`: the production origin, for example `https://www.powersetter.com`.
+   - `NEXT_PUBLIC_ALLOW_INDEXING`: leave unset (or `false`) until PowerSetter approves the launch.
+   - Leave both unset for **Preview**. Previews fall back to the production domain for canonical URLs and are always `noindex`.
+3. Every pull request gets a preview URL. Preview builds widen the CSP just enough for the Vercel toolbar (`vercel.live`); production does not.
+4. In GitHub, protect `main`: require a pull request and the `Lint, typecheck, unit tests, build` and `End-to-end` checks.
 
-The new identity is a proposed design, not a claim of an approved corporate rebrand. Fonts are self-hosted. Package versions and dependency integrity are retained in `package-lock.json`.
+Security headers (CSP, HSTS, `X-Frame-Options`, `Permissions-Policy` and others) are set in `next.config.ts` for production builds and verified by `e2e/home.spec.ts`. If you add analytics, embeds or third-party scripts, extend the CSP, or the end-to-end console-error check will fail.
 
-## Factual sources
+## Content rules
 
-Reviewed October 21, 2026:
+Every business fact lives in `lib/site.ts` and traces to powersetter.com; see [docs/content-sources.md](docs/content-sources.md). Claims we could not verify (for example "save up to 52%", testimonials and press logos) are deliberately left off and listed there as questions for PowerSetter. The bill and calculator use example figures and say so on the page.
 
-- https://www.powersetter.com/ — company-reported 250,000+ customers, 40+ energy suppliers, founded in 2014; electricity and natural gas comparison.
-- https://www.powersetter.com/about-us/ — home/business comparison, community solar, low-income enrollment options, public phone.
-- https://www.powersetter.com/community-solar-customer-acquisition/ — community solar without equipment installation on the customer's property.
-- https://nextjs.org/docs/app/guides/static-exports — App Router static deployment approach.
+## Known advisories
 
-The lead's individual email, sales owner, pipeline ID and discovery-call details are not in the website.
+`npm audit` reports a high-severity advisory in `braces`, pulled in by `eslint-config-next`. It is a development dependency only; `npm audit --omit=dev` is clean, and CI checks that. Do not run `npm audit fix --force`, which downgrades `eslint-config-next`.
 
-## Homepage section revision — October 21, 2026
+## Measured results
 
-Replaced the homepage block headed “Let the numbers do the talking” and its example calculator with a clear explanation of PowerSetter’s comparison-platform role. The replacement links to electricity plans, natural gas plans and renewable options, and explicitly distinguishes PowerSetter from a solar installer. The original hero, navigation, other homepage sections and supporting pages remain intact. The standalone supply-cost calculator is still available at `/savings/`.
+October 22, 2026, Lighthouse 12.8.2, mobile preset, production build on a Windows laptop, three or more runs per page. These are lab numbers, not field data from the live site.
 
-Logo correction: edited with the built-in image tool to remove only the duplicate lowercase p, retaining the P symbol followed by “owersetter”, the navy/blue palette and transparent background. Empty alpha margins were trimmed for website placement.
+| Page       | Performance                          | Accessibility | Best practices | SEO (indexing on) |
+| ---------- | ------------------------------------ | ------------- | -------------- | ----------------- |
+| `/`        | 94–95                                | 100           | 100            | 100               |
+| `/compare` | 94–95                                | 100           | 100            | not measured      |
+| `/energy`  | 92–94 (one outlier at 61, CPU spike) | 100           | 100            | not measured      |
 
-## Business section redesign — October 22, 2026
+SEO reads 69 while `noindex` is on; that is the crawlability audit, by design. End-to-end: 187 tests pass on desktop and mobile Chromium, Firefox and WebKit, with zero console errors and zero axe WCAG 2.2 AA violations on every page and every compare step.
 
-The homepage business-energy section now uses an editorial split layout, custom cafe-owner imagery, clear electricity/natural gas labels, primary and secondary navigation, and a three-part guide to usage, contract terms and renewal. The rest of the website is unchanged.
+## Before launch
 
-`public/assets/business-owner.webp` is a generated illustrative business scene, not a PowerSetter customer endorsement. Built-in image prompt: photorealistic independent cafe owner in a navy shirt reviewing a bill beside a laptop; bright oak-and-cream cafe, natural daylight, editorial composition; no logos, legible text or solar panels. Original 1536×1024 image compressed to WebP for the site.
+- [ ] PowerSetter approves the copy, the proposed logo and the illustrative imagery
+- [ ] Answers to the open questions in `docs/content-sources.md`
+- [ ] Replace illustrative photographs with real ones where PowerSetter has them
+- [ ] Decide where the compare flow hands off (today: powersetter.com and its contact form)
+- [ ] Set `NEXT_PUBLIC_SITE_URL`, then `NEXT_PUBLIC_ALLOW_INDEXING=true` on Production
+- [ ] Connect the domain in Vercel and test the call buttons on a real phone
+- [ ] Submit `sitemap.xml` to Google Search Console
+- [ ] Re-run Lighthouse on the live domain before quoting any score
